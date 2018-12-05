@@ -27,8 +27,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 
-public class MainActivity extends AppCompatActivity
-{
+public class MainActivity extends AppCompatActivity {
     private final int REQUEST_BLUETOOTH_ENABLE = 100;
 
     private TextView mConnectionStatus;
@@ -42,30 +41,29 @@ public class MainActivity extends AppCompatActivity
     private static final String TAG = "BluetoothClient";
 
     @Override
-    public void onCreate(Bundle savedInstanceState)
-    {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button sendButton = (Button)findViewById(R.id.send_button);
-        sendButton.setOnClickListener(new View.OnClickListener(){
-            public void onClick(View v){
+        Button sendButton = (Button) findViewById(R.id.send_button);
+        sendButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
                 String sendMessage = mInputEditText.getText().toString();
-                if ( sendMessage.length() > 0 ) {
+                if (sendMessage.length() > 0) {
                     sendMessage(sendMessage);
                 }
             }
         });
-        mConnectionStatus = (TextView)findViewById(R.id.connection_status_textview);
-        mInputEditText = (EditText)findViewById(R.id.input_string_edittext);
+        mConnectionStatus = (TextView) findViewById(R.id.connection_status_textview);
+        mInputEditText = (EditText) findViewById(R.id.input_string_edittext);
         ListView mMessageListview = (ListView) findViewById(R.id.message_listview);
 
-        mConversationArrayAdapter = new ArrayAdapter<>( this,
-                android.R.layout.simple_list_item_1 );
+        mConversationArrayAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_list_item_1);
         mMessageListview.setAdapter(mConversationArrayAdapter);
 
 
-        Log.d( TAG, "Initalizing Bluetooth adapter...");
+        Log.d(TAG, "Initalizing Bluetooth adapter...");
 
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (mBluetoothAdapter == null) {
@@ -76,8 +74,7 @@ public class MainActivity extends AppCompatActivity
         if (!mBluetoothAdapter.isEnabled()) {
             Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(intent, REQUEST_BLUETOOTH_ENABLE);
-        }
-        else {
+        } else {
             Log.d(TAG, "Initialisation successful.");
 
             showPairedDevicesListDialog();
@@ -88,7 +85,7 @@ public class MainActivity extends AppCompatActivity
     protected void onDestroy() {
         super.onDestroy();
 
-        if ( mConnectedTask != null ) {
+        if (mConnectedTask != null) {
 
             mConnectedTask.cancel(true);
         }
@@ -109,10 +106,10 @@ public class MainActivity extends AppCompatActivity
 
             try {
                 mBluetoothSocket = mBluetoothDevice.createRfcommSocketToServiceRecord(uuid);
-                Log.d( TAG, "create socket for "+mConnectedDeviceName);
+                Log.d(TAG, "create socket for " + mConnectedDeviceName);
 
             } catch (IOException e) {
-                Log.e( TAG, "socket create failed " + e.getMessage());
+                Log.e(TAG, "socket create failed " + e.getMessage());
             }
 
             mConnectionStatus.setText("connecting...");
@@ -149,24 +146,22 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected void onPostExecute(Boolean isSucess) {
 
-            if ( isSucess ) {
+            if (isSucess) {
                 connected(mBluetoothSocket);
-            }
-            else{
+            } else {
 
                 isConnectionError = true;
-                Log.d( TAG,  "Unable to connect device");
+                Log.d(TAG, "Unable to connect device");
                 showErrorDialog("Unable to connect device");
             }
         }
     }
 
 
-    public void connected( BluetoothSocket socket ) {
+    public void connected(BluetoothSocket socket) {
         mConnectedTask = new ConnectedTask(socket);
         mConnectedTask.execute();
     }
-
 
 
     private class ConnectedTask extends AsyncTask<Void, String, Boolean> {
@@ -175,47 +170,46 @@ public class MainActivity extends AppCompatActivity
         private OutputStream mOutputStream = null;
         private BluetoothSocket mBluetoothSocket = null;
 
-        ConnectedTask(BluetoothSocket socket){
+        ConnectedTask(BluetoothSocket socket) {
 
             mBluetoothSocket = socket;
             try {
                 mInputStream = mBluetoothSocket.getInputStream();
                 mOutputStream = mBluetoothSocket.getOutputStream();
             } catch (IOException e) {
-                Log.e(TAG, "socket not created", e );
+                Log.e(TAG, "socket not created", e);
             }
 
-            Log.d( TAG, "connected to "+mConnectedDeviceName);
-            mConnectionStatus.setText( "connected to "+mConnectedDeviceName);
+            Log.d(TAG, "connected to " + mConnectedDeviceName);
+            mConnectionStatus.setText("connected to " + mConnectedDeviceName);
         }
 
 
         @Override
         protected Boolean doInBackground(Void... params) {
 
-            byte [] readBuffer = new byte[1024];
+            byte[] readBuffer = new byte[1024];
             int readBufferPosition = 0;
 
 
             while (true) {
 
-                if ( isCancelled() ) return false;
+                if (isCancelled()) return false;
 
                 try {
 
                     int bytesAvailable = mInputStream.available();
 
-                    if(bytesAvailable > 0) {
+                    if (bytesAvailable > 0) {
 
                         byte[] packetBytes = new byte[bytesAvailable];
 
                         mInputStream.read(packetBytes);
 
-                        for(int i=0;i<bytesAvailable;i++) {
+                        for (int i = 0; i < bytesAvailable; i++) {
 
                             byte b = packetBytes[i];
-                            if(b == '\n')
-                            {
+                            if (b == '\n') {
                                 byte[] encodedBytes = new byte[readBufferPosition];
                                 System.arraycopy(readBuffer, 0, encodedBytes, 0,
                                         encodedBytes.length);
@@ -225,9 +219,7 @@ public class MainActivity extends AppCompatActivity
 
                                 Log.d(TAG, "recv message: " + recvMessage);
                                 publishProgress(recvMessage);
-                            }
-                            else
-                            {
+                            } else {
                                 readBuffer[readBufferPosition++] = b;
                             }
                         }
@@ -251,7 +243,7 @@ public class MainActivity extends AppCompatActivity
         protected void onPostExecute(Boolean isSucess) {
             super.onPostExecute(isSucess);
 
-            if ( !isSucess ) {
+            if (!isSucess) {
 
 
                 closeSocket();
@@ -268,7 +260,7 @@ public class MainActivity extends AppCompatActivity
             closeSocket();
         }
 
-        void closeSocket(){
+        void closeSocket() {
 
             try {
 
@@ -282,7 +274,7 @@ public class MainActivity extends AppCompatActivity
             }
         }
 
-        void write(String msg){
+        void write(String msg) {
 
             msg += "\n";
 
@@ -290,7 +282,7 @@ public class MainActivity extends AppCompatActivity
                 mOutputStream.write(msg.getBytes());
                 mOutputStream.flush();
             } catch (IOException e) {
-                Log.e(TAG, "Exception during send", e );
+                Log.e(TAG, "Exception during send", e);
             }
 
             mInputEditText.setText(" ");
@@ -298,20 +290,19 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    public void showPairedDevicesListDialog()
-    {
+    public void showPairedDevicesListDialog() {
         Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
         final BluetoothDevice[] pairedDevices = devices.toArray(new BluetoothDevice[0]);
 
-        if ( pairedDevices.length == 0 ){
-            showQuitDialog( "No devices have been paired.\n"
-                    +"You must pair it with another device.");
+        if (pairedDevices.length == 0) {
+            showQuitDialog("No devices have been paired.\n"
+                    + "You must pair it with another device.");
             return;
         }
 
         String[] items;
         items = new String[pairedDevices.length];
-        for (int i=0;i<pairedDevices.length;i++) {
+        for (int i = 0; i < pairedDevices.length; i++) {
             items[i] = pairedDevices[i].getName();
         }
 
@@ -331,18 +322,16 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-
-    public void showErrorDialog(String message)
-    {
+    public void showErrorDialog(String message) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Quit");
         builder.setCancelable(false);
         builder.setMessage(message);
-        builder.setPositiveButton("OK",  new DialogInterface.OnClickListener() {
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
-                if ( isConnectionError  ) {
+                if (isConnectionError) {
                     isConnectionError = false;
                     finish();
                 }
@@ -352,13 +341,12 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    public void showQuitDialog(String message)
-    {
+    public void showQuitDialog(String message) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Quit");
         builder.setCancelable(false);
         builder.setMessage(message);
-        builder.setPositiveButton("OK",  new DialogInterface.OnClickListener() {
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
@@ -368,9 +356,9 @@ public class MainActivity extends AppCompatActivity
         builder.create().show();
     }
 
-    void sendMessage(String msg){
+    void sendMessage(String msg) {
 
-        if ( mConnectedTask != null ) {
+        if (mConnectedTask != null) {
             mConnectedTask.write(msg);
             Log.d(TAG, "send message: " + msg);
             mConversationArrayAdapter.insert("Me:  " + msg, 0);
@@ -381,13 +369,13 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        if(requestCode == REQUEST_BLUETOOTH_ENABLE){
-            if (resultCode == RESULT_OK){
+        if (requestCode == REQUEST_BLUETOOTH_ENABLE) {
+            if (resultCode == RESULT_OK) {
                 //BlueTooth is now Enabled
                 showPairedDevicesListDialog();
             }
-            if(resultCode == RESULT_CANCELED){
-                showQuitDialog( "You need to enable bluetooth");
+            if (resultCode == RESULT_CANCELED) {
+                showQuitDialog("You need to enable bluetooth");
             }
         }
     }
