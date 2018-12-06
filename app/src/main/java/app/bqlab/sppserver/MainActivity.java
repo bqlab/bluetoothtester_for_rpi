@@ -191,23 +191,16 @@ public class MainActivity extends AppCompatActivity {
             byte[] readBuffer = new byte[1024];
             int readBufferPosition = 0;
 
-
             while (true) {
-
-                if (isCancelled()) return false;
-
+                if (isCancelled())
+                    return false;
                 try {
-
                     int bytesAvailable = mInputStream.available();
-
                     if (bytesAvailable > 0) {
-
                         byte[] packetBytes = new byte[bytesAvailable];
-
                         mInputStream.read(packetBytes);
 
                         for (int i = 0; i < bytesAvailable; i++) {
-
                             byte b = packetBytes[i];
                             if (b == '\n') {
                                 byte[] encodedBytes = new byte[readBufferPosition];
@@ -230,12 +223,10 @@ public class MainActivity extends AppCompatActivity {
                     return false;
                 }
             }
-
         }
 
         @Override
         protected void onProgressUpdate(String... recvMessage) {
-
             mConversationArrayAdapter.insert(mConnectedDeviceName + ": " + recvMessage[0], 0);
         }
 
